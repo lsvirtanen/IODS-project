@@ -1,13 +1,21 @@
 
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
+In this course we study tools and methods for "open data science". That is, using openly available data and tools in data science. Personally, I have some experience in the methods and tools used in this course. What I have not managed to do, but have been meaning to throughout my PhD studies, is develop systematic, trackable, and efficient routines to work with my code and data. I found this course on Sisu and figured this could help me get some practice in such workflow, and hopefully adopt some of it into my daily work. I am also happy to get a refresher on some of these statistical methods, as my knowledge has gotten very rusty.
+
+The book **R for Health Data Science** and the **Exercise Set 1** was in my view a good, and compact information package to start with. I have been working with **R** in specific courses and projects, but I have mostly just figured out enough to perform that particular task. Especially the different data types (table, frame, tibble) have given me headaches, as googling for solutions provides a variety of different ways to do certain things, not always compatible. I think I am better equipped to start working with the course assignments in a way that is (probably) consistent with the ways other students and instructors approach the same problems.
+
+[My GitHub repository.](https://github.com/lsvirtanen/IODS-project)
 
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
+# There was no assignment to edit this, but I figured that
+# a more descriptive use for the date would be neat.
 
-date()
+library(tidyverse)
+library(lubridate)
+
+#date()
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
 
 ```
-The text continues here.
-
