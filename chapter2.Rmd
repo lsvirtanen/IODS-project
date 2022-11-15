@@ -1,13 +1,109 @@
-# Insert chapter 2 title here
+# Assignment 2: Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+In this assignment, we perform linear regression analysis on a data set collected from participants of a course titled "Introduction to Social Statistics", in fall of 2014. The data contains numerical responses to questions about learning and studying, demographic data in the form of age and gender, and points from the course exam. One part of the questions are originally from ASSIST (Approaches and Study Skills Inventory for Students, [Link to scoring key PDF](http://www.etl.tla.ed.ac.uk/questionnaires/ASSIST.pdf)). Another part of the questions is based on SATS (Survey of Attitudes Toward Statistics, [Link](http://www.evaluationandstatistics.com/)).
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+The data were preprocessed by creating combination variables from mean scores to questions from section B of ASSIST (approaches to studying). These combination variables include "deep approach", "strategic approach", and "surface apathetic approach", named "deep", "stra", and "surf" respectively. A pre-calculated combination variable from mean scores to the SATS questions, "attitude", and variables for exam points, age, and gender were kept in the data. All other variables were discarded. Finally, all observations with a zero score in exam points were excluded.
+
+The code snippet below loads in the preprocessed data, and prints out information about data structure and dimensions.
 
 ```{r}
-date()
+# loading in packages for later use, not all needed here
+library(tidyverse) # install.packages("tidyverse")
+library(finalfit) # install.packages("finalfit")
+library(dplyr) # install.packages("dplyr")
+library(GGally) # install.packages("GGally")
+library(ggplot2) # install.packages("ggplot2")
+
+# load data file from a comma separated variable
+learning2014 <- read_csv("./data/learning2014.csv")
+
+# print information about data
+dim(learning2014)
+str(learning2014)
+missing_glimpse(learning2014)
 ```
 
-Here we go again...
+From the printout we can see that the data dimensions are 166 rows and 7 columns. The data includes six numerical variables, and one categorical variable with characters. There are no missing values in any of the variables.
+
+Next, a plot matrix is created to investigate data distributions, and the relationships between variables. Additional, some numerical summary statistics are printed out.
+
+```{r}
+# make a plot matrix of the variables in learning2014, divided by gender displayed in separate colors
+p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw graph
+p
+
+# print out additional, numerical summary statistics for the variables
+ff_glimpse(learning2014)
+```
+
+Most relevant information can be gleaned from the plot matrix. For the only categorical variable, gender, we can see there are about twice as many female as male respondents. The distributions in other variables do not differ dramatically between the genders, but there are some clear differences in correlations between variables for the two groups (namely, surf with attitude and deep). Besides age, which is clearly positively skewed, values in other variables are relatively normally distributed. Excluding age, there are only a few outliers. On the basis of scatterplots, the outliers in variable deep may be contributing to the correlation between deep and surf. However, due to their small number in relation to all respondents, the impact should be limited. Additionally, the negative correlation between age and points could be unduly affected by a small subset older respondents.
+
+Next, it is examined how points is affected by other variables of interest. The only variable which has a clearly significant correlation with exam points, is attitude, which will be included as an explanatory variable. Besides attitude, gender and attitude will be included in the initial model with interactions between all explanatory variables. In the code below, the initial model will be fit and examined.
+
+```{r}
+# fitting model 1
+my_model <- lm(points ~ attitude * surf * gender, data = learning2014)
+
+# print out summary
+summary(my_model)
+```
+
+In the initial model, of the main effects only attitude seems statistically significant. In contrast, interaction terms between attitude and gender, surf and gender, and all three explanatory variables, are statistically significant. What the summary suggests by regressor weights, in practice, is that there is a simple linear relationship between attitude and points where higher attitude score predicts higher exam points. In addition, there is a more complex multiplicative effect on exam points by attitude, gender, and surface approach. The effect of attitude on points is less positive for males, the effect of surface on points is more negative on males, and the combination of the three predicts better exam points. This is most likely driven by multicollinearity between attitude, surf, and gender variables. Below, the surf variable is dropped from the model and model summary examined.
+
+```{r}
+# fitting model 2
+my_model <- lm(points ~ attitude * gender, data = learning2014)
+
+# print out summary
+summary(my_model)
+```
+
+As the surf variable was dropped, the gender variable also lost its statistical significance. Below, gender is also dropped.
+
+```{r}
+# fitting model 3
+my_model <- lm(points ~ attitude, data = learning2014)
+
+# print out summary
+summary(my_model)
+```
+
+Now, because of my (maybe silly) initial choices for explanatory variables, the model has been reduced to a very simple one. The interpretation is in this case straightforward: each additional point in attitude score predicts around 3.5 additional points in the exam (attitude coefficient). The intercept is less intuitive right now as it shows the predicted exam points for an attitude score of 0, but in the questionnaire, 1 is the minimum. To adjust for this:
+
+```{r}
+# add adjusted attitude variable
+learning2014 <- learning2014 %>% 
+  mutate(attitudeADJ = attitude - 1)
+
+# fitting model 3 with slight adjustment
+my_model <- lm(points ~ attitudeADJ, data = learning2014)
+
+# print out summary
+summary(my_model)
+```
+
+Intercept now shows the predicted exam points if one responded with 1 to every attitude question. The R-squared indicates the variance explained by this model divided by total variation in the exam points variable data. In this case, approximately 19% of the variation in exam points is explained by attitude scores.
+
+Assumptions for linear regression modeling are: linear relationship between dependent and explanatory variables, independence, normal distribution, and equal variance of residuals. To evaluate if any of the assumptions were violated, residuals vs fitted values, normal QQ-plots, and residuals vs leverage are plotted below.
+
+```{r}
+# 2-by-2 subplots in same graph
+par(mfrow = c(2,2))
+
+# draw specified diagnostic plots
+plot(my_model, which=c(1,2,5))
+```
+
+In the residuals vs fitted values plot, we see that residuals are fairly equally distributed, and equal variance of residuals should hold. In the normal QQ plot there is slight deviation from the normal line at the extremes, suggesting that residuals are not strictly normally distributed. It is arguable whether some non-linear model would be more appropriate. Finally from the residuals vs leverage plot we can see that there are no points approaching Cook's distance, and thus unlikely any problematically influential points in the data.
+
+In the end, our model is very simple, and explains a moderate amount of variance. It could possibly be improved, but there are no devastating flaws.
+
+```{r}
+# adding a little timestamp at the end
+library(tidyverse)
+library(lubridate)
+
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
+```
