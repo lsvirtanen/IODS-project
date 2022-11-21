@@ -372,30 +372,20 @@ from mean scores to the SATS questions, “attitude”, and variables for
 exam points, age, and gender were kept in the data. All other variables
 were discarded. Finally, all observations with a zero score in exam
 points were excluded.</p>
+<p>First, including some packages that will be required later.</p>
+<pre class="r"><code># loading in packages for later use, not all needed here
+# suppress output to keep the course diary page tidy
+library(tidyverse) # install.packages(&quot;tidyverse&quot;)
+library(finalfit) # install.packages(&quot;finalfit&quot;)
+library(dplyr) # install.packages(&quot;dplyr&quot;)
+library(GGally) # install.packages(&quot;GGally&quot;)
+library(ggplot2) # install.packages(&quot;ggplot2&quot;)</code></pre>
 <p>The code snippet below loads in the preprocessed data, and prints out
 information about data structure and dimensions.</p>
-<pre class="r"><code># loading in packages for later use, not all needed here
-library(tidyverse) # install.packages(&quot;tidyverse&quot;)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.5     ✔ purrr   0.3.4
-## ✔ tibble  3.1.6     ✔ dplyr   1.0.8
-## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()</code></pre>
-<pre class="r"><code>library(finalfit) # install.packages(&quot;finalfit&quot;)
-library(dplyr) # install.packages(&quot;dplyr&quot;)
-library(GGally) # install.packages(&quot;GGally&quot;)</code></pre>
-<pre><code>## Registered S3 method overwritten by &#39;GGally&#39;:
-##   method from   
-##   +.gg   ggplot2</code></pre>
-<pre class="r"><code>library(ggplot2) # install.packages(&quot;ggplot2&quot;)
-
-# load data file from a comma separated variable
+<pre class="r"><code># load data file from a comma separated variable
 learning2014 &lt;- read_csv(&quot;./data/learning2014.csv&quot;)</code></pre>
-<pre><code>## Rows: 166 Columns: 7</code></pre>
-<pre><code>## ── Column specification ────────────────────────────────────────────────────────
+<pre><code>## Rows: 166 Columns: 7
+## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
 ## chr (1): gender
 ## dbl (6): age, attitude, deep, stra, surf, points
@@ -643,16 +633,7 @@ problematically influential points in the data.</p>
 <p>In the end, our model is very simple, and explains a moderate amount
 of variance. It could possibly be improved, but there are no devastating
 flaws.</p>
-<pre class="r"><code># adding a little timestamp at the end
-library(tidyverse)
-library(lubridate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;lubridate&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     date, intersect, setdiff, union</code></pre>
-<pre class="r"><code>Sys.time() %&gt;% format(&quot;Last updated %a %b %d %H:%M:%S %Y&quot;)</code></pre>
-<pre><code>## [1] &quot;Last updated Tue Nov 15 02:13:13 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Mon Nov 21 12:46:46 2022&quot;</code></pre>
 </div>
 
 

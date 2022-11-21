@@ -380,6 +380,8 @@ to Open Data Science - Course Project</a></li>
 project</a></li>
 <li><a href="#assignment-2-regression-and-model-validation" id="toc-assignment-2-regression-and-model-validation">Assignment 2:
 Regression and model validation</a></li>
+<li><a href="#assignment-3-logistic-regression" id="toc-assignment-3-logistic-regression">Assignment 3: Logistic
+regression</a></li>
 </ul>
 </div>
 
@@ -412,28 +414,7 @@ consistent with the ways other students and instructors approach the
 same problems.</p>
 <p><a href="https://github.com/lsvirtanen/IODS-project">My GitHub
 repository.</a></p>
-<pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
-# There was no assignment to edit this, but I figured that
-# a more descriptive use for the date would be neat.
-
-library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.5     ✔ purrr   0.3.4
-## ✔ tibble  3.1.6     ✔ dplyr   1.0.8
-## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()</code></pre>
-<pre class="r"><code>library(lubridate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;lubridate&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     date, intersect, setdiff, union</code></pre>
-<pre class="r"><code>#date()
-Sys.time() %&gt;% format(&quot;Last updated %a %b %d %H:%M:%S %Y&quot;)</code></pre>
-<pre><code>## [1] &quot;Last updated Tue Nov 15 02:15:46 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Mon Nov 21 12:47:14 2022&quot;</code></pre>
 <hr />
 </div>
 <div id="assignment-2-regression-and-model-validation" class="section level1">
@@ -456,22 +437,20 @@ from mean scores to the SATS questions, “attitude”, and variables for
 exam points, age, and gender were kept in the data. All other variables
 were discarded. Finally, all observations with a zero score in exam
 points were excluded.</p>
-<p>The code snippet below loads in the preprocessed data, and prints out
-information about data structure and dimensions.</p>
+<p>First, including some packages that will be required later.</p>
 <pre class="r"><code># loading in packages for later use, not all needed here
+# suppress output to keep the course diary page tidy
 library(tidyverse) # install.packages(&quot;tidyverse&quot;)
 library(finalfit) # install.packages(&quot;finalfit&quot;)
 library(dplyr) # install.packages(&quot;dplyr&quot;)
-library(GGally) # install.packages(&quot;GGally&quot;)</code></pre>
-<pre><code>## Registered S3 method overwritten by &#39;GGally&#39;:
-##   method from   
-##   +.gg   ggplot2</code></pre>
-<pre class="r"><code>library(ggplot2) # install.packages(&quot;ggplot2&quot;)
-
-# load data file from a comma separated variable
+library(GGally) # install.packages(&quot;GGally&quot;)
+library(ggplot2) # install.packages(&quot;ggplot2&quot;)</code></pre>
+<p>The code snippet below loads in the preprocessed data, and prints out
+information about data structure and dimensions.</p>
+<pre class="r"><code># load data file from a comma separated variable
 learning2014 &lt;- read_csv(&quot;./data/learning2014.csv&quot;)</code></pre>
-<pre><code>## Rows: 166 Columns: 7</code></pre>
-<pre><code>## ── Column specification ────────────────────────────────────────────────────────
+<pre><code>## Rows: 166 Columns: 7
+## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
 ## chr (1): gender
 ## dbl (6): age, attitude, deep, stra, surf, points
@@ -719,12 +698,11 @@ problematically influential points in the data.</p>
 <p>In the end, our model is very simple, and explains a moderate amount
 of variance. It could possibly be improved, but there are no devastating
 flaws.</p>
-<pre class="r"><code># adding a little timestamp at the end
-library(tidyverse)
-library(lubridate)
-
-Sys.time() %&gt;% format(&quot;Last updated %a %b %d %H:%M:%S %Y&quot;)</code></pre>
-<pre><code>## [1] &quot;Last updated Tue Nov 15 02:15:53 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Mon Nov 21 12:47:20 2022&quot;</code></pre>
+<hr />
+</div>
+<div id="assignment-3-logistic-regression" class="section level1">
+<h1>Assignment 3: Logistic regression</h1>
 <hr />
 <p>(more chapters to be added similarly as we proceed with the
 course!)</p>
