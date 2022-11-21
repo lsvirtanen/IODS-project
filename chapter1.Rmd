@@ -1,4 +1,3 @@
-
 # About the project
 
 In this course we study tools and methods for "open data science". That is, using openly available data and tools in data science. Personally, I have some experience in the methods and tools used in this course. What I have not managed to do, but have been meaning to throughout my PhD studies, is develop systematic, trackable, and efficient routines to work with my code and data. I found this course on Sisu and figured this could help me get some practice in such workflow, and hopefully adopt some of it into my daily work. I am also happy to get a refresher on some of these statistical methods, as my knowledge has gotten very rusty.
@@ -7,15 +6,16 @@ The book **R for Health Data Science** and the **Exercise Set 1** was in my view
 
 [My GitHub repository.](https://github.com/lsvirtanen/IODS-project)
 
-```{r}
+```{r, include=FALSE}
 # This is a so-called "R chunk" where you can write R code.
 # There was no assignment to edit this, but I figured that
 # a more descriptive use for the date would be neat.
 
 library(tidyverse)
 library(lubridate)
+```
 
+```{r, echo=FALSE}
 #date()
 Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
-
 ```

@@ -4,16 +4,21 @@ In this assignment, we perform linear regression analysis on a data set collecte
 
 The data were preprocessed by creating combination variables from mean scores to questions from section B of ASSIST (approaches to studying). These combination variables include "deep approach", "strategic approach", and "surface apathetic approach", named "deep", "stra", and "surf" respectively. A pre-calculated combination variable from mean scores to the SATS questions, "attitude", and variables for exam points, age, and gender were kept in the data. All other variables were discarded. Finally, all observations with a zero score in exam points were excluded.
 
-The code snippet below loads in the preprocessed data, and prints out information about data structure and dimensions.
+First, including some packages that will be required later.
 
-```{r}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 # loading in packages for later use, not all needed here
+# suppress output to keep the course diary page tidy
 library(tidyverse) # install.packages("tidyverse")
 library(finalfit) # install.packages("finalfit")
 library(dplyr) # install.packages("dplyr")
 library(GGally) # install.packages("GGally")
 library(ggplot2) # install.packages("ggplot2")
+```
 
+The code snippet below loads in the preprocessed data, and prints out information about data structure and dimensions.
+
+```{r}
 # load data file from a comma separated variable
 learning2014 <- read_csv("./data/learning2014.csv")
 
@@ -100,10 +105,13 @@ In the residuals vs fitted values plot, we see that residuals are fairly equally
 
 In the end, our model is very simple, and explains a moderate amount of variance. It could possibly be improved, but there are no devastating flaws.
 
-```{r}
+```{r, include=FALSE}
 # adding a little timestamp at the end
 library(tidyverse)
 library(lubridate)
+```
 
+```{r, echo=FALSE}
+#date()
 Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
 ```
