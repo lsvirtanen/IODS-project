@@ -1,1 +1,241 @@
 # Assignment 3: Logistic regression
+
+## Data description
+
+In this assignment we will use logistic regression to analyse Student Performance Data Set, available at: <https://archive.ics.uci.edu/ml/datasets/Student+Performance#>. The related paper: *P. Cortez and A. Silva. Using Data Mining to Predict Secondary School Student Performance. In A. Brito and J. Teixeira Eds., Proceedings of 5th FUture BUsiness TEChnology Conference (FUBUTEC 2008) pp. 5-12, Porto, Portugal, April, 2008, EUROSIS, ISBN 978-9077381-39-7.* The Student Performance Data Set involves measures of secondary school student performance in mathematics and Portuguese language, with a variety of background variables collected by using school reports and questionnaires.
+
+In a data wrangling script (found in data/create_alc.R in my Git repository) the data for mathematics and Portuguese language were combined. A variable of interest, "high alcohol consumption" was created as a logical variable based on participant reports of alcohol consumption. An average of weekday and weekend consumption (reported on numeric scale from 1 - very low to 5 - very high), and for values higher than 2, high alcohol consumption was coded as true.
+
+First, including some packages for later use, and reading in the data.
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# suppress output to keep the course diary page tidy
+library(tidyverse) # install.packages("tidyverse")
+library(finalfit) # install.packages("finalfit")
+library(ggplot2) # install.packages("ggplot2")
+library(patchwork) # install.packages("patchwork")
+library(boot) # install.packages("boot")
+
+alc <- read_csv("./data/alc.csv")
+```
+
+Printing out variable names.
+
+```{r}
+# print out dimensions and column names
+dim(alc)
+colnames(alc)
+```
+
+The data contains 370 observations for 35 columns which include demographic variables, and variables related to school, studying, and general well-being. Three variables (G1, G2, and G3) contain the course grades for first and second period, and final grade, respectively. In the case of this combined data set, the grade is either the grade for mathematics or portuguese, or their average if both were available. Further variable details can be found in <https://archive.ics.uci.edu/ml/datasets/Student+Performance#> and will not repeated here.
+
+## Choosing variables for analysis, and initial hypothesis
+
+The analysis will examine high and low alcohol consumption in relation to weekly study time, extra-curricular activities, quality of family relationships, and going out with friends. The choice of variables was not based on exploration of data, but on educated guesses on which variables might be related to alcohol consumption. The initial hypothesis is that higher alcohol consumption correlates with less weekly study time, no extra-curricular activities, poorer quality of family relationships, and going out with friends more.
+
+## Data exploration
+
+To explore the relationships of the four variables with alcohol consumption, each is plotted against the high_use variable in cross-tabulations, bar graphs, and count plots (box plots do not make much sense due to the categorical nature of the variables).
+
+```{r}
+# making a new data frame of selected variables for easier use
+alcsel = select(alc, high_use, studytime, activities, famrel, goout)
+
+# create cross-tabulations
+ct1 <- with(alcsel, table(high_use, studytime))
+ct2 <- with(alcsel, table(high_use, activities))
+ct3 <- with(alcsel, table(high_use, famrel))
+ct4 <- with(alcsel, table(high_use, goout))
+
+# plot crosstabs
+ct1
+ct2
+ct3
+ct4
+
+# create bargraphs for proportional counts by high use
+bg1 <- ggplot(alcsel, aes(x = studytime, fill = high_use)) + geom_bar(position = "fill") + labs(y = "proportion")
+bg2 <- ggplot(alcsel, aes(x = activities, fill = high_use)) + geom_bar(position = "fill") + labs(y = "proportion")
+bg3 <- ggplot(alcsel, aes(x = famrel, fill = high_use)) + geom_bar(position = "fill") + labs(y = "proportion")
+bg4 <- ggplot(alcsel, aes(x = goout, fill = high_use)) + geom_bar(position = "fill") + labs(y = "proportion")
+
+# plot bargraphs
+bg1 + bg2 + bg3 + bg4
+
+# create boxplots (and count plot for activities) by high use
+bp1 <- ggplot(alcsel, aes(x = high_use, y = studytime)) + geom_count()
+bp2 <- ggplot(alcsel, aes(x = high_use, y = activities)) + geom_count()
+bp3 <- ggplot(alcsel, aes(x = high_use, y = famrel)) + geom_count()
+bp4 <- ggplot(alcsel, aes(x = high_use, y = goout)) + geom_count()
+
+# plot boxplots
+bp1 + bp2 + bp3 + bp4
+```
+
+There is an overall smaller number of students with high alcohol consumption, so considering proportions is more straightforward. From the printout we can see that the initial hypotheses are generally in the right direction: larger proportion of high alcohol consumption students with less weekly study time, no extra-curricular activities, poorer quality of family relationships, and going out with friends more. Especially for weekly study time, and going out with friends, the proportion of high alcohol consumption students clearly varies. For quality of family relationships, the lowest category varies from the general trend, but note that this category contains very few observations. For extra-curricular activities the difference is maybe a little smaller than for the other three variables, but still in the direction of the initial hypothesis.
+
+## Logistic regression
+
+Next, logistic regression is used to explore the relationships. Of the four predictor variables, extra-curricular activities is in a nominal scale, while the other three are in an ordinal scale (one might argue that weekly study time could be considered a ratio scale, but the intervals are not equal). Thus, all predictor variables will be considered as categorical. For this purpose they will be recoded as factors with descriptive labels. Also, due to the fact that there are very few observations (see crosstabulations in previous section), the following categories will be combined: levels 3 and 4 of studytime, levels 1-3 of famrel, levels 1 and 2 of goout.
+
+```{r}
+# factorization of variables, not all are strictly necessary, but I have
+# included them for a more uniform printout
+alcsel <- alcsel %>% 
+  mutate(high_use.factor = factor(high_use) %>%          
+           fct_recode("No" = "FALSE",
+                      "Yes" = "TRUE") %>% 
+           ff_label("High alcohol consumption"), 
+         
+         studytime = factor(studytime) %>%          
+           fct_recode("< 2 hours" = "1",
+                      "2 to 5 hours" = "2",
+                      "> 5 hours" = "3",
+                      "> 5 hours" = "4") %>% 
+           ff_label("Weekly study time"),  
+
+         activities = factor(activities) %>% 
+           fct_recode("No" = "no",
+                      "Yes"  = "yes") %>% 
+           ff_label("Extra-curricular activities"),
+         
+         # note: did not find exact wording for labels 2-4
+         famrel = factor(famrel) %>%          
+           fct_recode("Average or below" = "1",
+                      "Average or below" = "2",
+                      "Average or below" = "3",
+                      "Good" = "4",
+                      "Very good" = "5") %>% 
+           ff_label("Quality of family relationships"),
+         
+         goout = factor(goout) %>%          
+           fct_recode("Low or very low" = "1",
+                      "Low or very low" = "2",
+                      "Average" = "3",
+                      "High" = "4",
+                      "Very high" = "5") %>% 
+           ff_label("Going out with friends")
+  )
+
+# find logistic linear model
+m <- glm(high_use ~ studytime + activities + famrel + goout, data = alcsel, family = "binomial")
+
+# print out a summary
+summary(m)
+
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(m) %>% exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+
+In the model, the coefficients for a level of a factorial variable are always in comparison to one of the variable levels. For this model, the levels in weekly study time are compared to "< 2 hours", in extra-curricular activities to "No", in quality of family relationships to "Average or below", and in going out with friends to "Low or very low". In the extra-curricular activities variable, there is no significant difference between levels "Yes" and "No". In the three other variables, at least one of the levels has a significant difference to the level used as baseline. Residual deviance (with the explanatory variables) is lower that null deviance (with no explanatory variables), but not dramatically so. Nevertheless, the variables seem to provide at least some explanatory power for the model.
+
+Focusing on the odds ratios that do not include 1 in the confidence interval, the model suggests the following odds ratios for high alcohol consumption:
+1. Compared to a weekly study time of less than two hours, a student has an odds ratio of ~0.26 if they study more than five hours a week.
+2. Compared to quality of family relationships rated average or below, a student has an odds ratio of ~0.36 if they rate their family relationships very good.
+3. Compared to a low or very low rating for going out with friends, a student has an odds ratio of ~6.18 with a rating of high, and an odds ratio of ~9.82 with a rating of very high.
+
+## Predictive power
+
+First, the variable for extra-curricular activities will be excluded from the model as it is not statistically significant. Then, a cross-tabulation and a bar graph of predicted and true values for high alcohol consumption will be provided to examine prediction accuracy. Finally, the proportion of inaccurately classified individuals is calculated.
+
+```{r}
+# fit the new model
+m <- glm(high_use ~ studytime + famrel + goout, data = alcsel, family = "binomial")
+
+# plot model summary to check
+summary(m)
+
+# predict() the probability of high_use
+probabilities <- predict(m, type = "response")
+
+# add the predicted probabilities to our data frame
+alcsel <- mutate(alcsel, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alcsel <- mutate(alcsel, prediction = probability > 0.5)
+
+# making a factor version of prediction just for more consistent labeling
+alcsel <- alcsel %>% 
+  mutate(pred.factor = factor(prediction) %>%          
+           fct_recode("No" = "FALSE",
+                      "Yes" = "TRUE") %>% 
+           ff_label("Prediction of high alcohol consumption")
+  )
+
+# tabulate high_use versus predictions
+table(high_use = alcsel$high_use.factor, prediction = alcsel$pred.factor)
+
+# plot of high_use versus predictions
+ggplot(alcsel, aes(x = high_use.factor, fill = pred.factor)) + geom_bar(position = "fill") + labs(y = "proportion")
+
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call the loss function to compute the average number of wrong predictions
+loss_func(class = alcsel$high_use, prob = alcsel$probability)
+```
+
+From the output it can be seen that the model predictions are far from perfect, but clearly better than chance. Proportionally, there are far more errors by predicting "no" for high alcohol consumption, when true value is "yes". The overall proportion of inaccurately classified individuals is ~0.23.
+
+To compare our model predictions against some simple guessing strategy, we could draw random permutations of the high_use vector and compare how many times our model has better prediction accuracy than the random samples.
+
+```{r}
+# store model inaccuracy in variable
+model_inacc <- loss_func(class = alcsel$high_use, prob = alcsel$probability)
+
+# define a new loss function for logical values
+loss_func_perm <- function(class, perm) {
+  n_wrong <- class != perm
+  mean(n_wrong)
+}
+
+# create empty vector for prediction inaccuracy
+wrong_pred <- c()
+
+# create a loop to draw random samples and calculate inaccuracy
+for (ii in 1:10000) {
+  
+  set.seed(ii) # for reproducibility
+  high_use_perm <- sample(alcsel$high_use)
+  
+  # call the loss function to compute the average number of wrong predictions
+  wrong_pred[ii] <- loss_func_perm(class = alcsel$high_use, perm = high_use_perm)
+}
+
+# calculate proportion of larger inaccuracies from permutations
+mean(wrong_pred > model_inacc)
+```
+
+Even with 10000 different random permutations, there was not a single instance where randomly guessing high alcohol consumption (in the correct ratio) would have been more accurate than the model predictions.
+
+Finally, the code snippet below performs 10-fold cross-validation for the model.
+
+```{r}
+# 10-fold cross-validation
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+
+The prediction error for this model is ~0.25, which is very slightly less than the 0.26 error in the exercise set.
+
+```{r, include=FALSE}
+# adding a little timestamp at the end
+library(tidyverse)
+library(lubridate)
+```
+
+```{r, echo=FALSE}
+#date()
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
+```
