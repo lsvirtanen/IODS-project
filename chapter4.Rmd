@@ -1,0 +1,75 @@
+# Assignment 4: Clustering and classification
+
+In this assignment we will use clustering and classification to analyze a data set included in the MASS package. First, let's take a quick look at what the "Housing Values in Suburbs of Boston" data set contains. We will refer to the data simply as Boston from here on out.
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# load in packages for future use, suppress output to keep course diary page tidy
+library(MASS) # include MASS package for the Boston data set
+library(tidyr)
+library(corrplot)
+```
+
+```{r}
+# load the data
+data("Boston")
+
+# explore the dataset
+str(Boston)
+dim(Boston)
+```
+
+We find that the data has 506 observations of 14 variables, 12 of them continuous numerical, and 2 categorical. The column names are not self-explanatory, but more information can be found in: <https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html>. Without giving a full list, we can find that the variables include statistics of zoning, housing, and demographics by town area, and importantly measures of air pollution. In the original paper *Harrison, D. and Rubinfeld, D.L. (1978) Hedonic prices and the demand for clean air. J. Environ. Economics and Management 5, 81–102.* the data are used to estimate willingness to "pay for clean air".
+
+## Graphical overview and summaries
+
+To explore the data further, we will present it graphically, and print variable summaries.
+
+```{r}
+# variable summaries
+summary(Boston)
+
+# scatterplot matrix
+pairs(Boston)
+
+# calculate the correlation matrix
+cor_matrix <- cor(Boston)
+
+ # visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+corrplot(cor_matrix, add = TRUE, type = 'lower', method = 'number', col = 'black', diag = FALSE, tl.pos = 'n', cl.pos = 'n', number.cex = 0.6)
+```
+
+Just from looking at quartiles in the variable summaries, we can see that many of them are highly skewed. They are also on highly different scales. This could affect data clustering and classification. From the scatterplot matrix, even though it may be difficult to see due to large number of scatterplots, there seem to be some clear divides in data with certain variables. This does not only include the categorical variables of "tract bounds Charles River" (as a dummy variable, the graphical divide does not mean much), and "index of accessibility to radial highways", but also for example the "full-value property-tax rate per $10,000" variable. The correlation plot provides a better view of the correlations between variables. We can see some very strong correlations, notably between indus and nox, indus and dis, indus and tax, nox and age, nox and dis, rm and medv, age and dis, rad and tax, lstat and medv. Some of them are fairly obvious, like correlation between industry and nitrogen oxide concentration, and accessibility to highways and property-tax rate. Also of note is that the "tract bounds Charles River" variable does not correlate much with any other variable.
+
+## Standardization
+
+For classification analyses we will next standardize all variables, and create a categorical variable of the crime variable (for said classification). To run the analyses, the data will be randomly split into a training set with 80% of observations, and a test set with 20% of observations.
+
+```{r}
+# standardizing the data set and changing to data frame
+boston_scaled <- as.data.frame(scale(Boston))
+
+# summary of scaled data
+summary(boston_scaled)
+
+# create a categorical variable crime with crim quantiles as cut points
+crime <- cut(boston_scaled$crim, breaks = quantile(boston_scaled$crim), include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+
+# number of rows in the Boston dataset 
+n <- nrow(boston_scaled)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+```
