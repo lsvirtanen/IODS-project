@@ -243,6 +243,7 @@ library(dplyr)
 library(MASS)
 boston_scaled <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/boston_scaled.txt",
                             sep=",", header = T)
+boston_scaled$crime <- factor(boston_scaled$crime, levels = c("low", "med_low", "med_high", "high"))
 ```
 
 ### Instructions
@@ -298,6 +299,8 @@ LDA can be visualized with a biplot. We will talk more about biplots next week. 
 library(MASS)
 boston_scaled <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/boston_scaled.txt",
                             sep=",", header = T)
+boston_scaled$crime <- factor(boston_scaled$crime, levels = c("low", "med_low", "med_high", "high"))
+
 ind <- sample(nrow(boston_scaled),  size = nrow(boston_scaled) * 0.8)
 train <- boston_scaled[ind,]
 test <- boston_scaled[-ind,]
@@ -364,6 +367,8 @@ We split our data earlier so that we have the test set and the correct class lab
 library(MASS)
 boston_scaled <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/boston_scaled.txt",
                             sep=",", header = T)
+boston_scaled$crime <- factor(boston_scaled$crime, levels = c("low", "med_low", "med_high", "high"))
+
 ind <- sample(nrow(boston_scaled),  size = nrow(boston_scaled) * 0.8)
 train <- boston_scaled[ind,]
 test <- boston_scaled[-ind,]

@@ -4,9 +4,12 @@ In this assignment we will use clustering and classification to analyze a data s
 
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
 # load in packages for future use, suppress output to keep course diary page tidy
-library(MASS) # include MASS package for the Boston data set
-library(tidyr)
-library(corrplot)
+# include MASS package for the Boston data set
+library(MASS) # install.packages("MASS")
+library(tidyr) # install.packages("tidyverse")
+library(corrplot) # install.packages("corrplot")
+library(ggplot2) # install.packages("ggplot2")
+library(GGally) # install.packages("GGally")
 ```
 
 ```{r}
@@ -72,4 +75,155 @@ train <- boston_scaled[ind,]
 
 # create test set 
 test <- boston_scaled[-ind,]
+```
+
+After scaling, the variables are now centered at 0 and on an equivalent scale.
+
+## Fitting LDA on the train set
+
+Next, we will fit a linear discriminant analysis on the train set with crime rate as the target, and all other variables as predictors. Discrimination is illustrated with a biplot, and using the additional plot arrows from Exercise set 4.
+
+```{r}
+# fit linear discriminant analysis
+lda.fit <- lda(crime ~ ., data = train)
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+
+## Predicting crime classification on test set
+
+Using the LDA fit from the train set, we will predict crime category on the test set. We first save the correct classification from the test set in a separate variable, remove the original variable from the test set data frame, and then find predictions based on LDA fit. Finally, we cross-tabulate predictions against correct categories to see classification accuracy.
+
+```{r}
+# save correct crime classification in separate variable
+correct_classes <- test$crime
+
+# remove crime variable from test data frame
+test <- dplyr::select(test, -crime)
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+
+```
+
+From the cross-tabulation we can see that the predictions are fairly accurate. Errors are mostly in "adjacent" categories. If anything, classification based on LDA assigns too many observations in the med_low category.
+
+## K-means clustering
+
+For clustering, we will reload the original data, standardize it again, calculate distances between observations, and print a summary of the distance matrix.
+
+```{r}
+# reload the data, not strictly necessary as there were no changes to this data frame previously
+data("Boston")
+
+# standardizing the data set and changing to data frame
+boston_scaled <- as.data.frame(scale(Boston))
+
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled)
+
+# print summary of distance matrix
+summary(dist_eu)
+```
+Next, to see examine the optimal number of clusters, we will run the k-means algorithm on the data set with 1 to 10 clusters, calculate and plot total within sum of squares for the different runs.
+
+```{r}
+# setting seed for replicability
+set.seed(123)
+
+# setting a large number of clusters to explore which number might be optimal
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+From the drop in the line, two clusters would seem ideal. We will next run k-means clustering with two clusters and visualize the clusters.
+
+```{r}
+# k-means clustering
+km <- kmeans(boston_scaled, centers = 2)
+
+# set as factor for ggpairs
+km$cluster <- factor(km$cluster)
+
+# plot the Boston dataset with clusters
+ggpairs(boston_scaled, progress = FALSE, upper = list(continuous = "points"), axisLabels = "none", ggplot2::aes(colour=km$cluster))
+```
+
+The scatterplot matrix is again somewhat difficult to read in detail, but some general outlines can be gleaned from the graph. Some clear clustering can be seen in the variables indus (proportion of non-retail business acres per town), nox (nitrogen oxides concentration), rad (index of accessibility to radial highways), and tax (full-value property-tax rate per $10,000). Collectively, this clustering could be indicative of high infrastructure, high industry--and in conjunction--high air pollution areas versus others.
+
+## LDA with clusters as target classes
+
+Next, we will fit and LDA model to the scaled Boston data using clusters from k-means clustering as target classes. We will first run the k-means algorithm (this time for 3 clusters), then include the cluster labels in our scaled data set, and then fit LDA with clusters as the target classes and all other variables as predictors. Finally, we will visualize the results with a biplot.
+
+```{r}
+# reload the data, not strictly necessary as there were no changes to this data frame previously
+data("Boston")
+
+# setting seed for replicability
+set.seed(1)
+
+# standardizing the data set and changing to data frame
+boston_scaled <- as.data.frame(scale(Boston))
+
+# k-means clustering with 3 clusters
+km <- kmeans(boston_scaled, centers = 3)
+
+# include clusters in the boston data frame
+boston_scaled$cluster <- km$cluster
+
+# fit linear discriminant analysis
+lda.fit <- lda(cluster ~ ., data = boston_scaled)
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(boston_scaled$cluster)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 3)
+```
+
+The three clusters are quite well separated in the biplot. Looking at the arrows for variables in the biplot, we can see that to discriminate cluster one from the other two, variables nox, tax, rad and indus seem most significant. This is fairly similar to what we could tell from the scatterplot matrix for the two clusters in the previous section. We can also see that the variable age (proportion of owner-occupied units built prior to 1940) seems to be most significant in separating cluster two from the others, and that variables zn (proportion of residential land zoned for lots over 25,000 sq.ft), medv (median value of owner-occupied homes in $1000s) and rm (average number of rooms per dwelling) seem to be most significant in separating cluster three from the other two. Cluster number three seems to be connected to size of accommodation, while cluster number two seems to relate to age of housing.
+
+```{r, include=FALSE}
+# adding a little timestamp at the end
+library(tidyverse)
+library(lubridate)
+```
+
+```{r, echo=FALSE}
+#date()
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
 ```
