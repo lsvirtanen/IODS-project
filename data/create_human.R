@@ -80,4 +80,4 @@ rownames(human) <- human$Country
 human <- select(human, -Country)
 
 # save modified data set
-write_csv(human, "human.csv")
+write.table(human, "human.csv", col.names = TRUE, row.names = TRUE, sep = ",")

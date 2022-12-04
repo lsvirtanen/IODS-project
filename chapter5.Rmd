@@ -1,0 +1,100 @@
+# Assignment 5: Dimensionality reduction techniques
+
+In this assignment we will use data combined from from Human Development Index and Gender Inequality Index data sets (for details, see <https://hdr.undp.org/data-center/human-development-index#/indicies/HDI> and <https://hdr.undp.org/system/files/documents//technical-notes-calculating-human-development-indices.pdf>). To begin with, we will explore the data visually and through variable summaries.
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# load in packages for future use, suppress output to keep course diary page tidy
+library(readr) # install.packages("readr")
+library(GGally) # install.packages("GGally")
+library(dplyr) # install.packages("dplyr")
+library(FactoMineR) # install.packages("FactoMineR")
+```
+
+```{r}
+# load the data
+human <- read.csv("data/human.csv", header = T, row.names = 1, sep = ",")
+write.csv
+
+# explore the dataset
+ggpairs(human, progress = FALSE)
+summary(human)
+```
+
+We find that there are numerous high correlations between our variables. The correlations between, e.g., gender ratio for population with secondary eduation (Edu2FM), expected years of education (EduExp), life expectancy at birth (LifeExp) and Gross National Income per capita (GNI) are positive, and these variables are negatively correlated with maternal mortality ratio (MatMor) and adolescent birth rate (AdoBirth). Of the variables EduExp and ParliF could be considered fairly normally distributed, but the rest of the variables are more or less skewed. Variable summaries also show us that the variables are on very different scales. Especially GNI is of a much higher magnitude than the rest of the variables.
+
+## Principal component analysis (unstandardized)
+
+To explore the data further, we will present it graphically, and print variable summaries.
+
+```{r, fig.width=10, fig.height=10, fig.cap="Figure: A biplot of PCA on unstandardized variables relating to human development and gender inequality of countries. PC1 coordinate is plotted on x-axis, PC2 coordinate is plotted on y-axis. Due to its large variation, Gross National Income per capita (GNI) is the only variable that is clearly distinguishable. Countries mostly align on two trajectories, one of which is captured by PC2, and one that is a combination of PC1 and PC2.", warning=FALSE}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+```
+
+Plotting the observations with weight on the first principal component on x-axis, and weight on the second principal component on y-axis, we can see that both axes provide some clear separation between countries. A majority of the countries, however, are packed within a relatively small area. It is also clear that because the variable GNI has a much larger variation, it dwarves the other variables in scale, which are indiscriminable in this graph.
+
+## Principal component analysis (standardized)
+
+We will now standardize the variables and repeat the PCA.
+
+```{r, fig.width=10, fig.height=10, fig.cap="Figure: A biplot of PCA on standardized variables relating to human development and gender inequality of countries. PC1 coordinate is plotted on x-axis, PC2 coordinate is plotted on y-axis. Gender ratio for population with secondary eduation, expected years of education, life expectancy at birth, and Gross National Income per capita seem to go together within countries. This seems to reflect a general state of development of the country. Opposite to the previous are maternal mortality and adolescent birth rate. It appears reproductive health is clearly negatively correlated with the country's development. Orthogonal to the other are ratio of female participation in parliament and labour force. However, there is some division between these two, as female participation in labour force seems more common in less developed countries than female participation in parliament, and vice versa."}
+# standardize the variables
+human_std <- as.data.frame(scale(human))
+
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human_std)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+```
+
+Now, with standardized variables, the biplot is much more descriptive. We can see that the result is not only in different scale, but also fairly different. Because the variables now have the same variation, they contribute much more equally to the PCA which tries to account for total variation. If we were to interpret the principal components, we could say that principal component 1 represents a general state of human development, and principal component 2 represents female participation in society.
+
+## Multiple Correspondence Analysis of tea data
+
+Next, we will examine selected variables from the "tea" data set, included in the FactoMineR package. The variables were selected with the main interest of looking whether different age groups or genders form specific groups on the basis of their tea drinking habits; specifically, whether they drink tea with or without friends, at home or outside home, in the evening or at breakfast, and whether they have a specific tea time (as I interpret the variable). We will perform MCA, print out a summary of the model, and plot our results on the first two MCA dimensions.
+
+```{r}
+# load data set
+tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+
+# look at dimensions and structure
+dim(tea)
+str(tea)
+
+# view data
+# View(tea)
+
+# column names to keep in the dataset
+keep_columns <- c("tea.time", "breakfast", "evening", "home", "friends", "age_Q", "sex")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- dplyr::select(tea, one_of(keep_columns))
+
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), graph.type = "classic", habillage = "quali")
+```
+
+From our results, we can see that our first two MCA dimensions do have clustering that involves age group and gender differences. On the first dimension, female respondents and tea time are weighted in one direction, and male respondents and no tea time are weighted in another. These variables do not contribute to the second dimension. On the second dimension, we have three oldest age groups, not friends, not evening, and breakfast weighted on one dimension. This would suggest that older respondents are more likely to enjoy tea alone, at breakfast, and not in the evening. On the other hand, the two youngest age groups show the opposite weighting on dimension two. Peculiarly, age group 25-34 and not home have a strong weight on dimension 1. This perhaps suggests that this specific age group, and more likely males who do not have a particular tea time, more commonly enjoy tea outside their home than the average respondent.
+
+```{r, include=FALSE}
+# adding a little timestamp at the end
+library(tidyverse)
+library(lubridate)
+```
+
+```{r, echo=FALSE}
+#date()
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
+```
