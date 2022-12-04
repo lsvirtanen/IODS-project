@@ -13,7 +13,6 @@ library(FactoMineR) # install.packages("FactoMineR")
 ```{r}
 # load the data
 human <- read.csv("data/human.csv", header = T, row.names = 1, sep = ",")
-write.csv
 
 # explore the dataset
 ggpairs(human, progress = FALSE)
@@ -32,7 +31,6 @@ pca_human <- prcomp(human)
 
 # draw a biplot of the principal component representation and the original variables
 biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-
 ```
 
 Plotting the observations with weight on the first principal component on x-axis, and weight on the second principal component on y-axis, we can see that both axes provide some clear separation between countries. A majority of the countries, however, are packed within a relatively small area. It is also clear that because the variable GNI has a much larger variation, it dwarves the other variables in scale, which are indiscriminable in this graph.
@@ -50,7 +48,6 @@ pca_human <- prcomp(human_std)
 
 # draw a biplot of the principal component representation and the original variables
 biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-
 ```
 
 Now, with standardized variables, the biplot is much more descriptive. We can see that the result is not only in different scale, but also fairly different. Because the variables now have the same variation, they contribute much more equally to the PCA which tries to account for total variation. If we were to interpret the principal components, we could say that principal component 1 represents a general state of human development, and principal component 2 represents female participation in society.
