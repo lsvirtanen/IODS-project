@@ -1,0 +1,295 @@
+# Assignment 6: Analysis of longitudinal data
+
+In this assignment we explore and analyze longitudinal data. First, we will use summary statistics to examine data from a nutrition study with three groups of rats on different diets. Second, we do a more formal analysis with linear mixed effects models of a data set where 40 male subjects were assigned to one of two treatment groups and rated on the brief psychiatric rating scale (BPRS). We will begin by taking a quick glance of rat nutrition study data, which we will refer to as RATS.
+
+## Summary statistics approach
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# load in packages for future use, suppress output to keep course diary page tidy
+library(readr) # install.packages("readr")
+library(dplyr) # install.packages("dplyr")
+library(tidyr) # install.packages("tidyr")
+library(ggplot2) # install.packages("ggplot2")
+library(lme4) # install.packages("lme4")
+library(lmerTest) # install.packages("lmerTest")
+library(patchwork) # install.packages("patchwork")
+```
+
+```{r}
+# load in RATS data
+RATS <- read.table("data/RATS.csv", sep = ",", header = T)
+
+# take a look at the data
+glimpse(RATS)
+
+# factor variables ID and Group
+RATS$ID <- factor(RATS$ID)
+RATS$Group <- factor(RATS$Group)
+
+# draw plots for the three groups
+ggplot(RATS, aes(x = Time, y = Weight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = unique(RATS$ID)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(RATS$Weight), max(RATS$Weight)))
+```
+
+In the data we have eight rats in group one, and four rats each in groups two and three. The starting weight of the rats is visibly lower in group one than it is in groups two and three. There is a general trend of increasing weight over the duration of the study. There would also seem to be a difference in weight from the starting point to the end, with lower rate of growth in group one compared to the other two. Also of note is a clear outlier in group two on the basis of starting weight.
+
+A tracking phenomenon can be seen in the plotted data, meaning rats with higher starting weight tend to have a higher weight at the end of the study and vice versa. To visualize this even more clearly, we repeat the plot with standardized weight values.
+
+```{r}
+# standardise the variable Weight
+RATS <- RATS %>%
+  group_by(Time) %>%
+  mutate(stdWeight = as.numeric(scale(Weight))) %>%
+  ungroup()
+
+# take a look at the data
+glimpse(RATS)
+
+# draw plots again with the standardised Weight
+ggplot(RATS, aes(x = Time, y = stdWeight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = unique(RATS$ID)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(name = "Standardized weight")
+```
+
+The tracking phenomenon is most apparent with rats that differ from their respective group mean.
+
+Next, we will move on from examining data of individual rats to exploration of summary measures for different groups. For this, we will calculate means and standard errors within groups for all different time points. We will plot the summary data as a line graph with error bars, and as boxplots which are more descriptive of distribution and outliers.
+
+```{r}
+# calculate summary data for time points by group
+RATSS <- RATS %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(Weight), se = sd(Weight)/sqrt(length(unique(ID))) ) %>%
+  ungroup()
+
+# take a look at the data
+glimpse(RATSS)
+
+# plot the mean profiles
+ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.9,0.5)) +
+  scale_y_continuous(name = "mean(Weight) +/- se(Weight)") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"))
+
+# plot the mean profiles with boxplots
+RATS$facTime <- factor(RATS$Time)
+ggplot(RATS, aes(x = facTime, y = Weight, fill = Group)) +
+  geom_boxplot(position=position_dodge(1)) +
+  theme(legend.position = c(0.9,0.4)) +
+  scale_y_continuous(name = "Weight") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"))
+```
+
+From the summary data we can see that each group follows a growing trend in weight. The overall weight of the rats is clearly lower in group one compared to groups two and three. The difference between groups two and three is less clear, but the standard error does not seem to overlap with the other group's mean. From the boxplots we can see that based on general weight, there is an outlier in groups one and two. For group three, one observation is considered an outlier only in four of the timepoints in the study.
+
+Our main interest with this data is whether there is a difference in **growth** between the three nutrition groups. Thus, a suitable summary statistic would be the average difference between the first and last weight measurements. We will calculate such a statistic for the three groups and draw boxplots for visual examination.
+
+```{r}
+# create a data frame with the difference of weights between last and first measurement
+RATSlast <- filter(RATS, Time == max(Time)) %>%
+  transmute(lastWeight = Weight)
+RATSdiff <- filter(RATS, Time == min(Time)) %>%
+  transmute(ID = ID, Group = Group, firstWeight = Weight, lastWeight = RATSlast$lastWeight, weightDiff = lastWeight - firstWeight)
+
+# draw boxplots of weight difference ("Growth") for the three groups
+ggplot(RATSdiff, aes(x = Group, y = weightDiff)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "Growth")
+
+# indicator for outlier
+RATSdiff$outlier <- RATSdiff$Group == 2 & RATSdiff$weightDiff < 40
+
+# create new data excluding outlier
+RATSdiff2 <- RATSdiff %>% filter(RATSdiff$outlier != TRUE)
+
+# draw new boxplots
+ggplot(RATSdiff2, aes(x = Group, y = weightDiff)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "Growth")
+```
+
+Based on the first graph, there was an outlier in our growth measure in group two. After removing the outlier we plot the data again. The general finding is that group one has the lowest growth in weight, group two has the highest growth in weight, with group three in the middle. Also of note is that group three has the highest variability in the growth measure.
+
+To more formally test for the statistical significance of the difference between groups, we will now run two-sample t-tests between each group pair. Finally, for completion and to keep in line with analyses conducted in "MABS4IODS", we will run analysis of covariance
+
+```{r}
+# two-sample t-test between groups 1 and 2
+t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 3), var.equal = TRUE)
+
+# two-sample t-test between groups 1 and 3
+t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 2), var.equal = TRUE)
+
+# two-sample t-test between groups 2 and 3
+t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 1), var.equal = TRUE)
+
+# create data frame for anova
+RATStime <- RATS %>%
+  group_by(Time) %>%
+  mutate( stdWeight = (Weight - mean(Weight))/sd(Weight) ) %>%
+  ungroup()
+RATSano <- RATStime %>%
+  filter(Time > 1) %>%
+  group_by(Group, ID) %>%
+  summarise( mean = mean(Weight) ) %>%
+  ungroup()
+
+# add baseline
+RATSano <- RATSano %>%
+  mutate(baseline = RATSdiff$firstWeight)
+
+# remove previously identified outlier
+RATSano <- filter(RATSano, ID != "11")
+
+# fit linear model 
+fit <- lm(mean ~ baseline + Group, data = RATSano)
+
+# compute anova
+anova(fit)
+```
+
+From the two-sample t-tests we can determine that all three groups have a statistically significant difference in growth of weight. The analysis of covariance further shows that there is a statistically significant difference in both baseline weight and weight change by group. Note, however, that this is an omnibus test, and only indicates that there is a difference *at least* between some of the three groups.
+
+## Linear mixed effects model approach
+
+For the next part, we will load in the data on psychological treatment and brief psychiatric rating scale scores (BPRS). First, we will examine the data briefly, and visualize it using three different styles of plots.
+
+```{r}
+# load BPRS data
+BPRS <- read.table("data/BPRS.csv", sep = ",", header = T)
+
+# take a look at the data
+glimpse(BPRS)
+
+# adjust subject numbers so that they are unique
+BPRS$subject[BPRS$treatment == 2] <- BPRS$subject[BPRS$treatment == 2] + 20
+
+# treatment and subject as factors
+BPRS$treatment <- factor(BPRS$treatment)
+BPRS$subject <- factor(BPRS$subject)
+
+# plot all bprs scores with treatment number
+ggplot(BPRS, aes(x = week, y = bprs)) +
+  geom_text(aes(label = treatment)) +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 1)) +
+  scale_y_continuous(name = "BPRS") +
+  theme(legend.position = "top") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"))
+
+# plot all subjects with line style by treatment
+ggplot(BPRS, aes(x = week, y = bprs, group = subject)) +
+  geom_line(aes(linetype = treatment)) +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 1)) +
+  scale_y_continuous(name = "BPRS") +
+  theme(legend.position = "top") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"))
+
+# create new data frame to plot pairs() of bprs by week
+week0 <- BPRS$bprs[BPRS$week == 0]
+week1 <- BPRS$bprs[BPRS$week == 1]
+week2 <- BPRS$bprs[BPRS$week == 2]
+week3 <- BPRS$bprs[BPRS$week == 3]
+week4 <- BPRS$bprs[BPRS$week == 4]
+week5 <- BPRS$bprs[BPRS$week == 5]
+week6 <- BPRS$bprs[BPRS$week == 6]
+week7 <- BPRS$bprs[BPRS$week == 7]
+week8 <- BPRS$bprs[BPRS$week == 8]
+BPRSweeks <- data.frame(week0, week1, week2, week3, week4, week5, week6, week7, week8)
+
+# scatterplot matrix of bprs
+pairs(BPRSweeks)
+```
+
+From the first two plots we can see that there is a general trend of lowering BPRS scores with the study duration. There is also large variation in individual BPRS starting scores, and that this variation is smaller at the end of the study. However, it is difficult to see a clear difference between the two treatment groups. From the scatterplot matrix we can see that there is a higher correlation in BPRS scores the closer together the two times of measurement are. This makes intuitive sense, as the change is expected to be gradual.
+
+Next, we will fit a variety of different models to the data, with BPRS score as the response variable, and week and treatment as explanatory variables. Summaries of the model are then provided. First, a linear regression model that ignores the repeated-measures structure of the data is fit. Second, a linear mixed effects model with random intercept is fit. Third, a random intercept and random slope model is fit. Fourth, a random intercept and random slope model with interaction between week and treatment is fit. ANOVA tests between models two and three, and between models three and four, are performed to investigate if the more complex models provide a statistically significant improvement on fit.
+
+```{r}
+# linear regression model ignoring repeated-measures structure
+BPRSreg1 <- lm(bprs ~ week + treatment, data = BPRS)
+
+# print out a summary of the model
+summary(BPRSreg1)
+
+# random intercept model
+BPRSreg2 <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRS, REML = FALSE)
+
+# Print the summary of the model
+summary(BPRSreg2)
+
+# random intercept and random slope model
+BPRSreg3 <- lmer(bprs ~ week + treatment + (week | subject), data = BPRS, REML = FALSE)
+
+# print a summary of the model
+summary(BPRSreg3)
+
+# perform an ANOVA test on the two models
+anova(BPRSreg2, BPRSreg3)
+
+# random intercept and random slope model with interaction
+BPRSreg4 <- lmer(bprs ~ week * treatment + (week | subject), data = BPRS, REML = FALSE)
+
+# print a summary of the model
+summary(BPRSreg4)
+
+# perform an ANOVA test on the two models
+anova(BPRSreg3, BPRSreg4)
+```
+
+With all of the above models, a common pattern is that time of measurement (week) is a significant predictor for BPRS score, while treatment group is not. Moving from the first to the second model, a large portion is correctly assigned from residual variance to inter-subject variance in intercept (in random effects). Adding the random slope in model three does assign a small portion of variance to inter-subject difference, which does increase the coefficient of treatment group two in comparison to one slightly. However, treatment group still does not become a statistically significant predictor. A look at model goodness-of-fit criteria between models two and three (and more formally, the ANOVA test) shows that allowing random slope in the model provides a better fit. Including interaction between week and treatment in model four does change the coefficients around slightly, with a negative weight for treatment, and a positive weight for the interaction. However, neither is statistically significant. Finally, comparing model three and model four, we can see that model four does not provide improvement in fit over model three. The goodness-of-fit criteria are essentially the same between the two models.
+
+As a final step in our analysis, we will extract fitted BPRS values from our model. As there is no improvement with model four over model three, we will use the more parsimonious model three. We will then plot observed BPRS values next to the fitted ones to examine how well our model fit aligns with ground truth.
+
+```{r}
+# create vector with fitted values
+Fitted <- as.numeric(fitted(BPRSreg3))
+
+# new column with fitted values
+BPRS <- BPRS %>% mutate( fitted = Fitted )
+
+# plot of observed values
+p1 <- ggplot(BPRS, aes(x = week, y = bprs, group = subject)) +
+  geom_line(aes(linetype = treatment)) +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 1)) +
+  scale_y_continuous(name = "BPRS", limits = c(15, 85)) +
+  theme(legend.position = "none") +
+  theme(panel.background = element_rect(fill = "white", colour = "black")) +
+  labs(title = "Observed")
+
+# plot of fitted values
+p2 <- ggplot(BPRS, aes(x = week, y = fitted, group = subject)) +
+  geom_line(aes(linetype = treatment)) +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 1)) +
+  scale_y_continuous(name = "BPRS", limits = c(15, 85)) +
+  theme(legend.position = "right") +
+  theme(panel.background = element_rect(fill = "white", colour = "black")) +
+  labs(title = "Fitted")
+
+p1 + p2
+```
+
+From the graph we can see that the model fit captures the general trend in BPRS change decently well. As the fit is linear, it obviously disregards the week-to-week fluctuation seen in the real data. Arguably, the overall change over the study duration is a more relevant, and simple statistic when evaluating treatment outcomes.
+
+```{r, include=FALSE}
+# adding a little timestamp at the end
+library(tidyverse)
+library(lubridate)
+```
+
+```{r, echo=FALSE}
+#date()
+Sys.time() %>% format("Last updated %a %b %d %H:%M:%S %Y")
+```

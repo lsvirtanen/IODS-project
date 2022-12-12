@@ -1,6 +1,10 @@
+# load in packages
+library(dplyr) # install.packages("dplyr")
+library(tidyr) # install.packages("tidyr")
+
 # read in data sets
 BPRS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt", sep =" ", header = T)
-RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", header = TRUE, sep = '\t')
+RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", sep = "\t", header = T)
 
 # checking data set properties of BPRS
 names(BPRS)
@@ -49,3 +53,7 @@ summary(RATSL)
 # The essential difference between wide form and long form is that wide form has each subject as one observation with separate
 # variables for different measurements; in contrast, long form presents each measurement as one observation, and subjects are
 # individuated by a subject variable.
+
+# save modified data sets
+write.table(BPRSL, "BPRS.csv", col.names = TRUE, row.names = TRUE, sep = ",")
+write.table(RATSL, "RATS.csv", col.names = TRUE, row.names = TRUE, sep = ",")
