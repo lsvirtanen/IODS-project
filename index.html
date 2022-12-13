@@ -459,7 +459,7 @@ consistent with the ways other students and instructors approach the
 same problems.</p>
 <p><a href="https://github.com/lsvirtanen/IODS-project">My GitHub
 repository.</a></p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:12:51 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:48:14 2022&quot;</code></pre>
 <hr />
 </div>
 <div id="assignment-2-regression-and-model-validation" class="section level1">
@@ -743,7 +743,7 @@ problematically influential points in the data.</p>
 <p>In the end, our model is very simple, and explains a moderate amount
 of variance. It could possibly be improved, but there are no devastating
 flaws.</p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:13:00 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:48:21 2022&quot;</code></pre>
 <hr />
 </div>
 <div id="assignment-3-logistic-regression" class="section level1">
@@ -1128,7 +1128,7 @@ cv$delta[1]</code></pre>
 <pre><code>## [1] 0.2486486</code></pre>
 <p>The prediction error for this model is ~0.25, which is very slightly
 less than the 0.26 error in the exercise set.</p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:13:03 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:48:24 2022&quot;</code></pre>
 <hr />
 </div>
 </div>
@@ -1471,7 +1471,7 @@ homes in $1000s) and rm (average number of rooms per dwelling) seem to
 be most significant in separating cluster three from the other two.
 Cluster number three seems to be connected to size of accommodation,
 while cluster number two seems to relate to age of housing.</p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:13:39 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:48:52 2022&quot;</code></pre>
 <hr />
 </div>
 </div>
@@ -1745,7 +1745,7 @@ home have a strong weight on dimension 1. This perhaps suggests that
 this specific age group, and more likely males who do not have a
 particular tea time, more commonly enjoy tea outside their home than the
 average respondent.</p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:13:46 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:48:58 2022&quot;</code></pre>
 <hr />
 </div>
 </div>
@@ -1958,37 +1958,18 @@ t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 1), var.equal = TRU
 ## sample estimates:
 ## mean in group 2 mean in group 3 
 ##        77.33333        41.50000</code></pre>
-<pre class="r"><code># create data frame for anova
-RATStime &lt;- RATS %&gt;%
-  group_by(Time) %&gt;%
-  mutate( stdWeight = (Weight - mean(Weight))/sd(Weight) ) %&gt;%
-  ungroup()
-RATSano &lt;- RATStime %&gt;%
-  filter(Time &gt; 1) %&gt;%
-  group_by(Group, ID) %&gt;%
-  summarise( mean = mean(Weight) ) %&gt;%
-  ungroup()</code></pre>
-<pre><code>## `summarise()` has grouped output by &#39;Group&#39;. You can override using the
-## `.groups` argument.</code></pre>
-<pre class="r"><code># add baseline
-RATSano &lt;- RATSano %&gt;%
-  mutate(baseline = RATSdiff$firstWeight)
-
-# remove previously identified outlier
-RATSano &lt;- filter(RATSano, ID != &quot;11&quot;)
-
-# fit linear model 
-fit &lt;- lm(mean ~ baseline + Group, data = RATSano)
+<pre class="r"><code># fit linear model 
+fit &lt;- lm(weightDiff ~ firstWeight + Group, data = RATSdiff2)
 
 # compute anova
 anova(fit)</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
-## Response: mean
-##           Df Sum Sq Mean Sq  F value    Pr(&gt;F)    
-## baseline   1 248644  248644 3142.691 7.181e-15 ***
-## Group      2   1480     740    9.352  0.004238 ** 
-## Residuals 11    870      79                       
+## Response: weightDiff
+##             Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## firstWeight  1 2521.1 2521.09  17.712 0.0014643 ** 
+## Group        2 4234.9 2117.47  14.877 0.0007444 ***
+## Residuals   11 1565.7  142.34                      
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <p>From the two-sample t-tests we can determine that all three groups
@@ -2281,7 +2262,7 @@ trend in BPRS change decently well. As the fit is linear, it obviously
 disregards the week-to-week fluctuation seen in the real data. Arguably,
 the overall change over the study duration is a more relevant, and
 simple statistic when evaluating treatment outcomes.</p>
-<pre><code>## [1] &quot;Last updated Mon Dec 12 19:13:51 2022&quot;</code></pre>
+<pre><code>## [1] &quot;Last updated Tue Dec 13 16:49:02 2022&quot;</code></pre>
 <hr />
 <p>(more chapters to be added similarly as we proceed with the
 course!)</p>

@@ -136,26 +136,8 @@ t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 2), var.equal = TRU
 # two-sample t-test between groups 2 and 3
 t.test(weightDiff ~ Group, data = filter(RATSdiff2, Group != 1), var.equal = TRUE)
 
-# create data frame for anova
-RATStime <- RATS %>%
-  group_by(Time) %>%
-  mutate( stdWeight = (Weight - mean(Weight))/sd(Weight) ) %>%
-  ungroup()
-RATSano <- RATStime %>%
-  filter(Time > 1) %>%
-  group_by(Group, ID) %>%
-  summarise( mean = mean(Weight) ) %>%
-  ungroup()
-
-# add baseline
-RATSano <- RATSano %>%
-  mutate(baseline = RATSdiff$firstWeight)
-
-# remove previously identified outlier
-RATSano <- filter(RATSano, ID != "11")
-
 # fit linear model 
-fit <- lm(mean ~ baseline + Group, data = RATSano)
+fit <- lm(weightDiff ~ firstWeight + Group, data = RATSdiff2)
 
 # compute anova
 anova(fit)
